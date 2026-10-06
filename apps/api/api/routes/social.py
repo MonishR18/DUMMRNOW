@@ -4,21 +4,11 @@ from typing import List
 from core.database import get_db
 from models.social import Post, Comment, Like, Bookmark, Follow
 from models.user import User
-from schemas.social import PostCreate, PostResponse, CommentCreate, CommentResponse
+from schemas.social import PostCreate, PostResponse, CommentBase, CommentCreate, CommentResponse
 
 router = APIRouter(prefix="/api", tags=["social"])
 
-# Mocked user ID for testing since we don't have JWT auth yet
-MOCK_USER_ID = 1
-
-def get_current_user_id(db: Session = Depends(get_db)):
-    # Automatically create the mock user if it doesn't exist
-    user = db.query(User).filter(User.id == MOCK_USER_ID).first()
-    if not user:
-        user = User(id=MOCK_USER_ID, name="Test User", username="testuser", email="test@example.com", hashed_password="fake")
-        db.add(user)
-        db.commit()
-    return MOCK_USER_ID
+from core.security import get_current_active_user
 
 @router.get("/feed", response_model=List[PostResponse])
 def get_feed(db: Session = Depends(get_db), skip: int = 0, limit: int = 20):
@@ -26,7 +16,8 @@ def get_feed(db: Session = Depends(get_db), skip: int = 0, limit: int = 20):
     return posts
 
 @router.post("/posts", response_model=PostResponse)
-def create_post(post: PostCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def create_post(post: PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     db_post = Post(content=post.content, author_id=user_id)
     db.add(db_post)
     db.commit()
@@ -34,7 +25,8 @@ def create_post(post: PostCreate, db: Session = Depends(get_db), user_id: int = 
     return db_post
 
 @router.post("/posts/{post_id}/like")
-def toggle_like(post_id: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def toggle_like(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     post = db.query(Post).filter(Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -51,7 +43,8 @@ def toggle_like(post_id: int, db: Session = Depends(get_db), user_id: int = Depe
         return {"status": "liked"}
 
 @router.post("/posts/{post_id}/bookmark")
-def toggle_bookmark(post_id: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def toggle_bookmark(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     post = db.query(Post).filter(Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -73,7 +66,8 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
     return comments
 
 @router.post("/posts/{post_id}/comments", response_model=CommentResponse)
-def create_comment(post_id: int, comment: CommentBase, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def create_comment(post_id: int, comment: CommentBase, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     post = db.query(Post).filter(Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")

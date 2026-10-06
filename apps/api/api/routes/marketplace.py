@@ -4,7 +4,8 @@ from typing import List
 from core.database import get_db
 from models.marketplace import Task, TaskApplication
 from schemas.marketplace import TaskCreate, TaskResponse, TaskDetailResponse, TaskApplicationCreate, TaskApplicationResponse
-from api.routes.social import get_current_user_id
+from core.security import get_current_active_user
+from models.user import User
 
 router = APIRouter(prefix="/api/tasks", tags=["marketplace"])
 
@@ -14,7 +15,8 @@ def get_tasks(db: Session = Depends(get_db), skip: int = 0, limit: int = 20, sta
     return tasks
 
 @router.post("", response_model=TaskResponse)
-def create_task(task: TaskCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def create_task(task: TaskCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     db_task = Task(**task.model_dump(), creator_id=user_id)
     db.add(db_task)
     db.commit()
@@ -29,7 +31,8 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
     return task
 
 @router.post("/{task_id}/take-up", response_model=TaskApplicationResponse)
-def apply_to_task(task_id: int, app: TaskApplicationCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def apply_to_task(task_id: int, app: TaskApplicationCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -47,7 +50,8 @@ def apply_to_task(task_id: int, app: TaskApplicationCreate, db: Session = Depend
     return db_app
 
 @router.post("/{task_id}/applications/{app_id}/accept", response_model=TaskApplicationResponse)
-def accept_application(task_id: int, app_id: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def accept_application(task_id: int, app_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    user_id = current_user.id
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")

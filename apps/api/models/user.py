@@ -12,6 +12,13 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     college = Column(String, nullable=True)
+    role = Column(String, default="CLIENT")
+    profile_image = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
+    skills = Column(String, nullable=True) # or JSON
+    expertise = Column(String, nullable=True)
+    rating = Column(Integer, default=0)
+    completed_orders = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -27,3 +34,7 @@ class User(Base):
     # Marketplace Relationships
     client_tasks = relationship("Task", back_populates="creator", cascade="all, delete-orphan")
     applications = relationship("TaskApplication", back_populates="worker", cascade="all, delete-orphan")
+    
+    # Service Marketplace
+    services = relationship("Service", back_populates="seller", cascade="all, delete-orphan")
+    favorites = relationship("ServiceFavorite", back_populates="user", cascade="all, delete-orphan")

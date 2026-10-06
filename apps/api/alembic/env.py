@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from core.database import Base
-from models import user, social, marketplace # Ensure models are imported
+from models import user, social, marketplace, service, order, messaging, notification, payment # Ensure models are imported
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
